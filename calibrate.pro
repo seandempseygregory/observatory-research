@@ -8,6 +8,9 @@ pro calibrate
   print, "Select master flats"
   flats = DIALOG_PICKFILE(TITLE="Select Master Flats",  FILTER='*.fit',/MULTIPLE_FILES)
   t=systime(/seconds)
+  caldat,systime(/julian),month,day,year,hour,minute
+  directory='calibrated_'+strcompress(string(month,day,year,hour,minute),/remove_all)
+  FILE_MKDIR,directory
   sz=size(files, /N_ELEMENTS)
   nflats=size(flats, /N_ELEMENTS)
   print,'Number of files selected =',sz
@@ -33,7 +36,11 @@ pro calibrate
     x=strcompress(sxpar(header,'filter'),/remove_all)
     if x EQ 'Red' then (flat=rflat) else if x EQ 'Green' then (flat=gflat) else if x EQ 'Blue' then (flat=bflat)
     image=((image-mdark)/flat)
-    fits_write,'calibrated_files/calibrated_'+strtrim(string(i+1),1)+'_'+x+'.fit',image
-    modfits,'calibrated_files/calibrated_'+strtrim(string(i+1),1)+'_'+x+'.fit',0,header
+    sky,image,s,skyerror,/silent
+    image=image-s
+    image=float(image)
+    fits_write,directory+'/calibrated_'+x+'_'+strtrim(string(i+1),1)+'.fit',image,header
+    ;modfits,'calibrated_files/calibrated_'+strtrim(string(i+1),1)+'_'+x+'.fit',0,header
+    print,'Created File:'+directory+'/calibrated_'+x+'_'+strtrim(string(i+1),1)+'.fit'
   endfor
 end

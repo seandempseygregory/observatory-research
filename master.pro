@@ -9,7 +9,9 @@ pro master
   fitsize=size(image)
   flats=fltarr(3,sz)
   darks=fltarr(2,sz)
-  
+  caldat,systime(/julian),month,day,year,hour,minute
+  directory='masters_'+strcompress(string(month,day,year,hour,minute),/remove_all)
+  FILE_MKDIR,directory
   ;****************************************
   ;Reading in and initial sorting of files
   ;****************************************
@@ -148,8 +150,11 @@ pro master
   endrep until (sxpar(header,'exptime') NE exptimes[i])
   mDark=mDark/tempCount
 
-  fits_write,'master_dark_'+strtrim(string(exptimes[i]),1)+'s.fit',mDark
-  print,'Created File: master_dark_'+strtrim(string(exptimes[i]),1)+'s.fit'
+  fits_write,directory+'/master_dark_'+strtrim(string(exptimes[i]),1)+'s.fit',mDark
+  h=headfits(directory+'/master_dark_'+strtrim(string(exptimes[i]),1)+'s.fit')
+  sxaddpar,h,'EXPTIME',exptimes[i]
+  modfits,directory+'/master_dark_'+strtrim(string(exptimes[i]),1)+'s.fit',0,h
+  print,'Created File: '+directory+'/master_dark_'+strtrim(string(exptimes[i]),1)+'s.fit'
   endfor
 
 ;****************************************
@@ -186,11 +191,11 @@ for i=0,nFilts-1 do begin
   if flag EQ 0 then break
   if filter EQ 1 then (filterColor='Red') else if filter EQ 2 then (filterColor='Green') else if filter EQ 3 then (filterColor='Blue') else (filterColor='Unknown')
   mFlat=mFlat/tempCount
-  fits_write,'master_flat_'+filterColor+'.fit',mFlat
-  h=headfits('master_flat_'+filterColor+'.fit')
+  fits_write,directory+'/master_flat_'+filterColor+'.fit',mFlat
+  h=headfits(directory+'/master_flat_'+filterColor+'.fit')
   sxaddpar,h,'FILTER',filterColor
-  modfits,'master_flat_'+filterColor+'.fit',0,h
-  print,'Created File: master_flat_'+filterColor+'.fit'
+  modfits,directory+'/master_flat_'+filterColor+'.fit',0,h
+  print,'Created File:'+directory+' master_flat_'+filterColor+'.fit'
   if (fullCount EQ nFlats-1) then break
 endfor
 
