@@ -37,7 +37,7 @@ pro calibrate
     if x EQ 'Red' then (flat=rflat) else if x EQ 'Green' then (flat=gflat) else if x EQ 'Blue' then (flat=bflat)
     image=((image-mdark)/flat)
     sky,image,s,skyerror,/silent
-    image=image-s
+    image=image-s+1000
     image=float(image)
     fits_write,directory+'/calibrated_'+x+'_'+strtrim(string(i+1),1)+'.fit',image,header
     ;modfits,'calibrated_files/calibrated_'+strtrim(string(i+1),1)+'_'+x+'.fit',0,header

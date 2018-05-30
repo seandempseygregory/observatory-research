@@ -173,7 +173,7 @@ pro darks,npixels
   printf,3,'Percent Error','   Standard Deviation of the Mean','   Standard Deviation of Percent Error',format='(a13,a33,a38)'
   for v=0,n_elements(nframesarr)-1 do begin
     for p=0,npixels-1 do begin
-    percerr[v,p] = ((sigma[p]/SQRT(nframesarr[v]))/meanv[p])
+    percerr[v,p] = ((sigma[p]/SQRT(nframesarr[v]))/meanv[p])*100
     sigmamean[v,p] = (sigma[p]/SQRT(nframesarr[v]))
     endfor
     meanpercerr[v]=mean(percerr[v,*])
