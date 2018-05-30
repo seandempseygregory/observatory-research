@@ -20,8 +20,8 @@ pro darks,npixels
 ;       sz - number of dark frames selected, value set by size of darkfiles array;
 ;       fitsize - resolution of dark frames (used to determine max values for pixel coordinates). Assumes all dark frames selected are same resolution.
 ;       noisearr - A user defined array filled with noise percentages to be evaluated (written as decimal values).
-;       meanv - A array to be filled with the average pixel value for each of the choosen pixels over all frames. Size determined by npixels variable.
-;       sigma - A array to be filled with the standard deviation for each of the choosen pixels over all frames. Size determined by npixels variable.
+;       meanv - A array to be filled with the average pixel value for each of the chosen pixels over all frames. Size determined by npixels variable.
+;       sigma - A array to be filled with the standard deviation for each of the chosen pixels over all frames. Size determined by npixels variable.
 ;       numdarks - An array used to hold values for the number of dark frames needed for each noise percentage for each individual pixel value.
 ;                  Size is determined by npixels variable.
 ;       ndarks - Array used to hold the average values for the number of dark frames needed for each noise percentage for all pixel values.
@@ -34,7 +34,7 @@ pro darks,npixels
 ;       numberofframes - An array used in pixel value vs # of frames averaged plot. Gives the number of frames averaged together. Size determined by sz variable
 ;
 ; DETAILED DESCRIPTION:
-;       FILE INPUT & ARRAY INITILIZATION - Present user with file selection dialog used to selection the dark frames that are to be read.
+;       FILE INPUT & ARRAY INITIALIZATION - Present user with file selection dialog used to selection the dark frames that are to be read.
 ;                                          Initializes the arrays and variables needed to run the procedure.
 ;       FILE READING & PIXEL VALUE EXTRACTION - Present user with file selection dialog used to selection the dark frames that are to be read.
 ;                                               Initializes the arrays and variables needed to run the procedure.
@@ -50,10 +50,10 @@ pro darks,npixels
 ;              State University of New York at Fredonia Physics Department
 ;
 ;      LAST DATE MODIFIED -  10/12/2017
-;-
+; -
 
 ;*******************************************
-;     FILE INPUT & ARRAY INITILIZATION
+;     FILE INPUT & ARRAY INITIALIZATION
 ;*******************************************
   darkfiles = DIALOG_PICKFILE(TITLE="Select Dark Files",  FILTER='*.fit',/MULTIPLE_FILES)
   plot_directory = DIALOG_PICKFILE(TITLE="Choose directory to save plots to",/DIRECTORY)
