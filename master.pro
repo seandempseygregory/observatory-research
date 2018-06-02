@@ -73,7 +73,6 @@ pro master
   ;****************************************
   ;Pre-Analysis of Flats
   ;****************************************
-
   ;Determines which different integration times are present
   nExps=1
   exptimes=fltarr(nflats+ndarks)
@@ -131,7 +130,6 @@ pro master
   fullCount = 0
   for i=0,nExps-1 do begin
     tempCount=0
-
     repeat begin
       if tempCount EQ 0 then begin
         fits_read,files[darks[0,fullCount]],image,header
@@ -139,22 +137,20 @@ pro master
       endif else begin
         mDark=(mDark+image)
       endelse
-    fullCount=fullCount+1
-    tempCount=tempCount+1
-    if (fullCount LT nDarks) then begin
-      fits_read,files[darks[0,fullCount]],image,header
-      image=image*1.0D
-    endif else begin
-      break
-    endelse
-  endrep until (sxpar(header,'exptime') NE exptimes[i])
-  mDark=mDark/tempCount
-
-  fits_write,directory+'/master_dark_'+strtrim(string(exptimes[i]),1)+'s.fit',mDark
-  h=headfits(directory+'/master_dark_'+strtrim(string(exptimes[i]),1)+'s.fit')
-  sxaddpar,h,'EXPTIME',exptimes[i]
-  modfits,directory+'/master_dark_'+strtrim(string(exptimes[i]),1)+'s.fit',0,h
-  print,'Created File: '+directory+'/master_dark_'+strtrim(string(exptimes[i]),1)+'s.fit'
+      fullCount=fullCount+1
+      tempCount=tempCount+1
+      if (fullCount LT nDarks) then begin
+        fits_read,files[darks[0,fullCount]],image,header
+        image=image*1.0D
+      endif else begin
+        break
+      endelse
+    endrep until (sxpar(header,'exptime') NE exptimes[i])
+    mDark=mDark/tempCount
+    h=header
+    sxaddpar,h,'EXPTIME',exptimes[i]
+    fits_write,directory+'/master_dark_'+strtrim(string(exptimes[i]),1)+'s.fit',mDark,h
+    print,'Created File: '+directory+'/master_dark_'+strtrim(string(exptimes[i]),1)+'s.fit'
   endfor
 
 ;****************************************
@@ -167,6 +163,7 @@ for i=0,nFilts-1 do begin
   tempCount=0
   repeat begin
     fits_read,files[flats[0,fullCount]],image,header
+    h=header
     flat=image*1.0D
     expTime=flats[2,fullCount]
     flag=0
@@ -177,7 +174,7 @@ for i=0,nFilts-1 do begin
       print,'ERROR: There is no'+strtrim(string(expTime),1)+'s master dark file present'
       break
     endif
-    fits_read,'master_dark_'+strtrim(string(expTime),1)+'s.fit',image,header
+    fits_read,directory+'/master_dark_'+strtrim(string(expTime),1)+'s.fit',image,header
     dark=image*1.0D
     if tempCount EQ 0 then begin
       mFlat=((flat-dark)/(median(flat-dark)))
@@ -191,10 +188,9 @@ for i=0,nFilts-1 do begin
   if flag EQ 0 then break
   if filter EQ 1 then (filterColor='Red') else if filter EQ 2 then (filterColor='Green') else if filter EQ 3 then (filterColor='Blue') else (filterColor='Unknown')
   mFlat=mFlat/tempCount
-  fits_write,directory+'/master_flat_'+filterColor+'.fit',mFlat
-  h=headfits(directory+'/master_flat_'+filterColor+'.fit')
   sxaddpar,h,'FILTER',filterColor
-  modfits,directory+'/master_flat_'+filterColor+'.fit',0,h
+  sxdelpar,h,'EXPTIME'
+  fits_write,directory+'/master_flat_'+filterColor+'.fit',mFlat,h
   print,'Created File:'+directory+' master_flat_'+filterColor+'.fit'
   if (fullCount EQ nFlats-1) then break
 endfor
