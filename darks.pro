@@ -56,7 +56,7 @@ pro darks,npixels
 ;     FILE INPUT & ARRAY INITIALIZATION
 ;*******************************************
   darkfiles = DIALOG_PICKFILE(TITLE="Select Dark Files",  FILTER='*.fit',/MULTIPLE_FILES)
-  plot_directory = DIALOG_PICKFILE(TITLE="Choose directory to save plots to",/DIRECTORY)
+  plot_directory = DIALOG_PICKFILE(TITLE="Choose directory to save plots and text files to to",/DIRECTORY)
   t=systime(/seconds)
   sz=size(darkfiles, /N_ELEMENTS)
   print,'Number of dark files selected =',sz
@@ -86,7 +86,7 @@ pro darks,npixels
 ;   FILE READING & PIXEL VALUE EXTRACTION
 ;*******************************************
   for i=0L,sz-1 do begin
-    if (i MOD 100) EQ 0 then print, i, systime()
+    if (i MOD 100) EQ 0 then print, i
     fits_read,darkfiles[i],image,header
     for j=0,npixels-1 do begin
       pixel_Values[i,j]=image[xpixel[j],ypixel[j]]
@@ -101,7 +101,7 @@ pro darks,npixels
 ;*******************************************
 ;       MEAN PIXEL VALUE DETERMINATION
 ;*******************************************
-  openw,2,'darkpixels.txt'
+  openw,2,plot_directory+'/darkpixels.txt'
   for k=0,npixels-1 do begin
     pixel_Value=pixel_Values[*,k]
     meanv[k]=mean(pixel_Value)
@@ -144,7 +144,7 @@ pro darks,npixels
 ;*******************************************
 ;           PIXEL VALUE ANALYSIS
 ;*******************************************
-  openw,1,'darkpercent.txt'
+  openw,1,plot_directory+'/darkpercent.txt'
   for u=0, n_elements(noisearr)-1 do begin
     for s=0,npixels-1 do begin
       darkmean=meanv[s]
@@ -169,7 +169,7 @@ pro darks,npixels
     printf,1,noisearr[u],ndarks[u]
   endfor
   close,1
-  openw,3,'percentError.txt'
+  openw,3,plot_directory+'/percentError.txt'
   printf,3,'Percent Error','   Standard Deviation of the Mean','   Standard Deviation of Percent Error',format='(a13,a33,a38)'
   for v=0,n_elements(nframesarr)-1 do begin
     for p=0,npixels-1 do begin
@@ -190,7 +190,7 @@ pro darks,npixels
   symbol=dindgen(20)*2*!pi/19
   usersym,sin(symbol),cos(symbol),/fill
   set_plot,'ps'
-    device,filename='darkpercent.eps',/encaps,xsize=20,ysize=20
+    device,filename=plot_directory+'/darkpercent.eps',/encaps,xsize=20,ysize=20
     !p.thick=4
     !x.thick=4
     !y.thick=4
@@ -199,7 +199,7 @@ pro darks,npixels
     plot,noisearr*100,ndarks,psym=8,xtitle='% level',ytitle='# of Darks',/xl,xrange=[1.1,0.008],/xstyle,/yl
     device,/close
   set_plot,'ps'
-    device,filename='percenterror.eps',/encaps,xsize=20,ysize=20
+    device,filename=plot_directory+'/percenterror.eps',/encaps,xsize=20,ysize=20
     !p.thick=4
     !x.thick=4
     !y.thick=4
@@ -209,7 +209,7 @@ pro darks,npixels
     ;errplot,nframesarr,meanpercerr-sigmapercerr,meanpercerr+sigmapercerr
     device,/close
   set_plot,'ps'
-    device,filename='sigmamean.eps',/encaps,xsize=20,ysize=20
+    device,filename=plot_directory+'/sigmamean.eps',/encaps,xsize=20,ysize=20
     !p.thick=4
     !x.thick=4
     !y.thick=4
