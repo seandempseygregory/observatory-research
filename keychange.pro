@@ -1,8 +1,8 @@
 pro keychange,key,newvalue
 
   ;Displays dialog windows for user to select .fit files
-  print,"Select .fit Files to edit"
-  files = DIALOG_PICKFILE(TITLE="Select .fit Files to calibrate",  FILTER='*.fit',/MULTIPLE_FILES)
+  print,"Select .fit files to modify"
+  files = DIALOG_PICKFILE(TITLE="Select .fit files to modify",  FILTER='*.fit',/MULTIPLE_FILES)
   sz=size(files, /N_ELEMENTS)
   print,'Number of files selected =',sz
   t=systime(/seconds)
