@@ -9,7 +9,6 @@ pro negcheck
   totalpixels=(fitsize[1]*fitsize[2])
   for i=0,sz-1 do begin
     num[i]=0
-    print,i
     fits_read,files[i],image,header
     for j=0,(fitsize[1]-1) do begin
       for k=0,(fitsize[2]-1) do begin
