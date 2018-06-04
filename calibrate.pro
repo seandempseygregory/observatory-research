@@ -43,4 +43,7 @@ pro calibrate
     ;modfits,'calibrated_files/calibrated_'+strtrim(string(i+1),1)+'_'+x+'.fit',0,header
     print,'Created File:'+directory+'/calibrated_'+x+'_'+strtrim(string(i+1),1)+'.fit'
   endfor
+
+  t2=systime(/seconds)
+  print,'Total Time= ',t2-t,' Seconds'
 end

@@ -20,4 +20,7 @@ pro negcheck
   print,num
   print,'average =',mean(num)
   print,'percent=',(mean(num)/totalpixels)*100
+  
+  t2=systime(/seconds)
+  print,'Total Time= ',t2-t,' Seconds'
 end

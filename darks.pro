@@ -218,6 +218,7 @@ pro darks,npixels
     plot,nframesarr,meansigmamean,psym=8,xtitle='N!DFrames!N',ytitle='Mean Standard Deviation of the Mean (Counts)',xrange=[0.7,1400],/xl,/xstyle,/yl
     errplot,nframesarr,meansigmamean-sigmapercerr,meansigmamean+sigmapercerr
     device,/close
+    
   t2=systime(/seconds)
   print,'Total Time= ',t2-t,' Seconds'
 end

@@ -153,48 +153,48 @@ pro master
     print,'Created File: '+directory+'/master_dark_'+strtrim(string(exptimes[i]),1)+'s.fit'
   endfor
 
-;****************************************
-;Creation of Master Flats
-;****************************************
+  ;****************************************
+  ;Creation of Master Flats
+  ;****************************************
 
-fullCount = 0
-for i=0,nFilts-1 do begin
-  filter=flats[1,fullCount]
-  tempCount=0
-  repeat begin
-    fits_read,files[flats[0,fullCount]],image,header
-    h=header
-    flat=image*1.0D
-    expTime=flats[2,fullCount]
-    flag=0
-    for j=0,nExps-1 do begin
-      if exptimes[j] EQ expTime then flag=1
-    endfor
-    if flag EQ 0 then begin
-      print,'ERROR: There is no'+strtrim(string(expTime),1)+'s master dark file present'
-      break
-    endif
-    fits_read,directory+'/master_dark_'+strtrim(string(expTime),1)+'s.fit',image,header
-    dark=image*1.0D
-    if tempCount EQ 0 then begin
-      mFlat=((flat-dark)/(median(flat-dark)))
-    endif else begin
-      mFlat=((mFlat+((flat-dark)/(median(flat-dark)))))
-    endelse
-    tempCount=tempCount+1
-    fullCount=fullCount+1
-    if fullCount EQ nFlats then break
-  endrep until (flats[1,fullCount]) NE filter
-  if flag EQ 0 then break
-  if filter EQ 1 then (filterColor='Red') else if filter EQ 2 then (filterColor='Green') else if filter EQ 3 then (filterColor='Blue') else (filterColor='Unknown')
-  mFlat=mFlat/tempCount
-  sxaddpar,h,'FILTER',filterColor
-  sxdelpar,h,'EXPTIME'
-  fits_write,directory+'/master_flat_'+filterColor+'.fit',mFlat,h
-  print,'Created File:'+directory+' master_flat_'+filterColor+'.fit'
-  if (fullCount EQ nFlats-1) then break
-endfor
-
-t2=systime(/seconds)
-print,'Total Time= ',t2-t,' Seconds'
+  fullCount = 0
+  for i=0,nFilts-1 do begin
+    filter=flats[1,fullCount]
+    tempCount=0
+    repeat begin
+      fits_read,files[flats[0,fullCount]],image,header
+      h=header
+      flat=image*1.0D
+      expTime=flats[2,fullCount]
+      flag=0
+      for j=0,nExps-1 do begin
+        if exptimes[j] EQ expTime then flag=1
+      endfor
+      if flag EQ 0 then begin
+        print,'ERROR: There is no'+strtrim(string(expTime),1)+'s master dark file present'
+        break
+      endif
+      fits_read,directory+'/master_dark_'+strtrim(string(expTime),1)+'s.fit',image,header
+      dark=image*1.0D
+      if tempCount EQ 0 then begin
+        mFlat=((flat-dark)/(median(flat-dark)))
+      endif else begin
+        mFlat=((mFlat+((flat-dark)/(median(flat-dark)))))
+      endelse
+      tempCount=tempCount+1
+      fullCount=fullCount+1
+      if fullCount EQ nFlats then break
+    endrep until (flats[1,fullCount]) NE filter
+    if flag EQ 0 then break
+    if filter EQ 1 then (filterColor='Red') else if filter EQ 2 then (filterColor='Green') else if filter EQ 3 then (filterColor='Blue') else (filterColor='Unknown')
+    mFlat=mFlat/tempCount
+    sxaddpar,h,'FILTER',filterColor
+    sxdelpar,h,'EXPTIME'
+    fits_write,directory+'/master_flat_'+filterColor+'.fit',mFlat,h
+    print,'Created File:'+directory+' master_flat_'+filterColor+'.fit'
+    if (fullCount EQ nFlats-1) then break
+  endfor
+  
+  t2=systime(/seconds)
+  print,'Total Time= ',t2-t,' Seconds'
 end
