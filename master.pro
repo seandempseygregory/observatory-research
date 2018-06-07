@@ -29,20 +29,34 @@ pro master
       if sxpar(header,'picttype') EQ 4 then begin   ;If fit file is Flat Field Frame output position in files array,filter type,and integration time into flats array
         flats[0,nflats]=i
         x=strcompress(sxpar(header,'filter'),/remove_all)
+        filter=9999
         for j=0,nfilters-1 do begin
           if x EQ (filter_types.filtername[j] )then filter=filter_types.filternumber[j]
         endfor
+        if filter EQ 9999 then begin
+          print,'*****ERROR**** Could not determine filter type.', files[i]
+          stop
+        endif
         flats[1,nflats]=filter
         flats[2,nflats]=sxpar(header,'exptime')
         nflats=nflats+1
       endif else begin
-        print,'Could not determine type of frame.', files[i]       ;Prints error if file is not labeled as a dark or flat in the file header
+        print,'*****ERROR**** Could not determine type of frame.', files[i]       ;Prints error if file is not labeled as a dark or flat in the file header
         stop
         break
       endelse
     endelse
   endfor
 
+  if ndarks EQ 0 then begin
+    print,'*****ERROR**** No dark frames provided'    ;Prints error if file is not labeled as a dark or flat in the file header
+    stop
+  endif
+  if nflats EQ 0 then begin
+    print,'*****ERROR**** No flat field frames provided'    ;Prints error if file is not labeled as a dark or flat in the file header
+    stop
+  endif
+  
   ; Trims the flats and darks arrays to get rid of null entries.
   flatstrim=fltarr(3,nflats)
   darkstrim=fltarr(2,ndarks)
