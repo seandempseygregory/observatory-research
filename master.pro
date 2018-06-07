@@ -9,6 +9,8 @@ pro master
   fitsize=size(image)
   flats=fltarr(3,sz)
   darks=fltarr(2,sz)
+  filter_types={filtername:['Red','Green','Blue','U','B','V','R','I'],filternumber:[1,2,3,4,5,6,7,8]}
+  nfilters=size(filter_types.filternumber, /N_ELEMENTS)
   caldat,systime(/julian),month,day,year,hour,minute
   directory='masters_'+strcompress(string(month,day,year,hour,minute),/remove_all)
   FILE_MKDIR,directory
@@ -27,7 +29,9 @@ pro master
       if sxpar(header,'picttype') EQ 4 then begin   ;If fit file is Flat Field Frame output position in files array,filter type,and integration time into flats array
         flats[0,nflats]=i
         x=strcompress(sxpar(header,'filter'),/remove_all)
-        if x EQ 'Red' then (filter=1) else if x EQ 'Green' then (filter=2) else if x EQ 'Blue' then (filter=3) else (filter=99)
+        for j=0,nfilters-1 do begin
+          if x EQ (filter_types.filtername[j] )then filter=filter_types.filternumber[j]
+        endfor
         flats[1,nflats]=filter
         flats[2,nflats]=sxpar(header,'exptime')
         nflats=nflats+1
@@ -186,7 +190,9 @@ pro master
       if fullCount EQ nFlats then break
     endrep until (flats[1,fullCount]) NE filter
     if flag EQ 0 then break
-    if filter EQ 1 then (filterColor='Red') else if filter EQ 2 then (filterColor='Green') else if filter EQ 3 then (filterColor='Blue') else (filterColor='Unknown')
+    for j=0,nfilters-1 do begin
+      if filter EQ filter_types.filternumber[j] then filterColor=(filter_types.filtername[j] )
+    endfor
     mFlat=mFlat/tempCount
     sxaddpar,g,'FILTER',filterColor
     sxaddpar,g,'PICTYPE',4
