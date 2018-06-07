@@ -147,8 +147,9 @@ pro master
       endelse
     endrep until (sxpar(header,'exptime') NE exptimes[i])
     mDark=mDark/tempCount
-    h=header
     sxaddpar,h,'EXPTIME',exptimes[i]
+    sxaddpar,h,'PICTYPE',3
+    sxaddpar,h,'IMGTYPE','Dark Frame'
     fits_write,directory+'/master_dark_'+strtrim(string(exptimes[i]),1)+'s.fit',mDark,h
     print,'Created File: '+directory+'/master_dark_'+strtrim(string(exptimes[i]),1)+'s.fit'
   endfor
@@ -163,7 +164,6 @@ pro master
     tempCount=0
     repeat begin
       fits_read,files[flats[0,fullCount]],image,header
-      h=header
       flat=image*1.0D
       expTime=flats[2,fullCount]
       flag=0
@@ -188,13 +188,14 @@ pro master
     if flag EQ 0 then break
     if filter EQ 1 then (filterColor='Red') else if filter EQ 2 then (filterColor='Green') else if filter EQ 3 then (filterColor='Blue') else (filterColor='Unknown')
     mFlat=mFlat/tempCount
-    sxaddpar,h,'FILTER',filterColor
-    sxdelpar,h,'EXPTIME'
-    fits_write,directory+'/master_flat_'+filterColor+'.fit',mFlat,h
+    sxaddpar,g,'FILTER',filterColor
+    sxaddpar,g,'PICTYPE',4
+    sxaddpar,g,'IMGTYPE','Flat Field'
+    fits_write,directory+'/master_flat_'+filterColor+'.fit',mFlat,g
     print,'Created File:'+directory+' master_flat_'+filterColor+'.fit'
     if (fullCount EQ nFlats-1) then break
   endfor
-  
+
   t2=systime(/seconds)
   print,'Total Time= ',t2-t,' Seconds'
 end
