@@ -13,7 +13,7 @@ pro master
   nfilters=size(filter_types.filternumber, /N_ELEMENTS)
   caldat,systime(/julian),month,day,year,hour,minute
   directory='masters_'+strcompress(string(month,day,year,hour,minute),/remove_all)
-  FILE_MKDIR,directory
+
   ;****************************************
   ;Reading in and initial sorting of files
   ;****************************************
@@ -41,7 +41,9 @@ pro master
         flats[2,nflats]=sxpar(header,'exptime')
         nflats=nflats+1
       endif else begin
+        print,''
         print,'*****ERROR**** Could not determine type of frame.', files[i]       ;Prints error if file is not labeled as a dark or flat in the file header
+        print,''
         stop
         break
       endelse
@@ -49,14 +51,18 @@ pro master
   endfor
 
   if ndarks EQ 0 then begin
-    print,'*****ERROR**** No dark frames provided'    ;Prints error if file is not labeled as a dark or flat in the file header
+    print,''
+    print,'*****ERROR**** No dark frames provided'
+    print,''
     stop
   endif
   if nflats EQ 0 then begin
-    print,'*****ERROR**** No flat field frames provided'    ;Prints error if file is not labeled as a dark or flat in the file header
+    print,''
+    print,'*****ERROR**** No flat field frames provided'
+    print,''
     stop
   endif
-  
+
   ; Trims the flats and darks arrays to get rid of null entries.
   flatstrim=fltarr(3,nflats)
   darkstrim=fltarr(2,ndarks)
@@ -94,6 +100,7 @@ pro master
   ;Determines which different integration times are present
   nExps=1
   exptimes=fltarr(nflats+ndarks)
+  darkexptimes=fltarr(ndarks)
   pExptime=flats[2,0]
   exptimes[0]=pExptime
   for i=1,nflats-1 do begin
@@ -104,24 +111,65 @@ pro master
      endif
     pExptime=exptime
   endfor
+  flatexptimes=exptimes
   pExptime=darks[1,0]
+  darkexptimes[0]=pExptime
+  temp=1
   for i=1,ndarks-1 do begin
     exptime=darks[1,i]
     if exptime NE pExptime then begin
        nExps=nExps+1
+       temp=temp+1
        exptimes[nExps-1]=exptime
+       darkexptimes[temp-1]=exptime
      endif
     pExptime=exptime
   endfor
+
   nExps=size(uniq(exptimes,sort(exptimes)),/n_elements)
   exptimesTrim=fltarr(nExps)
   exptimesTrim=exptimes[uniq(exptimes,sort(exptimes))]
   delvar,exptimes
+  nflatExps=size(uniq(flatexptimes,sort(flatexptimes)),/n_elements)
+  flatexptimesTrim=fltarr(nflatExps)
+  flatexptimesTrim=flatexptimes[uniq(flatexptimes,sort(flatexptimes))]
+  delvar,flatexptimes
+  ndarkExps=size(uniq(darkexptimes,sort(darkexptimes)),/n_elements)
+  darkexptimesTrim=fltarr(ndarkExps)
+  darkexptimesTrim=darkexptimes[uniq(darkexptimes,sort(darkexptimes))]
+  delvar,darkexptimes
+
   exptimes=fltarr(nExps-1)
   for i=1,nExps-1 do begin
     exptimes[i-1]=exptimesTrim[i]
   endfor
   delvar,exptimesTrim
+  flatexptimes=fltarr(nflatExps-1)
+  for i=1,nflatExps-1 do begin
+    flatexptimes[i-1]=flatexptimesTrim[i]
+  endfor
+  delvar,flatexptimesTrim
+  darkexptimes=fltarr(ndarkExps-1)
+  for i=1,ndarkExps-1 do begin
+    darkexptimes[i-1]=darkexptimesTrim[i]
+  endfor
+  delvar,darkexptimesTrim
+
+for i=0,nflatExps-2 do begin
+  flatexptime=flatexptimes[i]
+  flag=0
+  for j=0,ndarkExps-2 do begin
+    darkexptime=darkexptimes[j]
+    if darkexptime EQ flatexptime then flag=1
+  endfor
+  if flag EQ 0 then begin
+    print,''
+    print,'*****ERROR**** There are no '+strtrim(string(flatexpTime),1)+'s dark frames'
+    print,''
+    stop
+  endif
+endfor
+
   nExps=nExps-1
   print,'Number of different Exposure Times =',nExps
   ;Determines which different filters are present
@@ -142,6 +190,9 @@ pro master
   filters=filtersTrim
   delvar,filtersTrim
   print,'Number of different Filters Used =',nFilts
+
+  FILE_MKDIR,directory
+
   ;****************************************
   ;Creation of Master Darks
   ;****************************************
@@ -184,14 +235,9 @@ pro master
       fits_read,files[flats[0,fullCount]],image,header
       flat=image*1.0D
       expTime=flats[2,fullCount]
-      flag=0
       for j=0,nExps-1 do begin
         if exptimes[j] EQ expTime then flag=1
       endfor
-      if flag EQ 0 then begin
-        print,'ERROR: There is no'+strtrim(string(expTime),1)+'s master dark file present'
-        break
-      endif
       fits_read,directory+'/master_dark_'+strtrim(string(expTime),1)+'s.fit',image,header
       dark=image*1.0D
       if tempCount EQ 0 then begin
