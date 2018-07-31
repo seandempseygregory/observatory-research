@@ -1,18 +1,19 @@
-pro flats
-  mainflat = DIALOG_PICKFILE(TITLE="Select Main Flat",  FILTER='*.fit')
-  flats = DIALOG_PICKFILE(TITLE="Select Other Flats",  FILTER='*.fit',/MULTIPLE_FILES)
-  sz=size(flats, /N_ELEMENTS)
+pro flatscom
+  horflats = DIALOG_PICKFILE(TITLE="Select Horizon Flats",  FILTER='*.fit',/MULTIPLE_FILES)
+  overflats = DIALOG_PICKFILE(TITLE="Select Overhead Flats",  FILTER='*.fit',/MULTIPLE_FILES)
+  sz=size(horflats, /N_ELEMENTS)
   caldat,systime(/julian),month,day,year,hour,minute
   plot_directory='flats_'+strcompress(string(month,day,year,hour,minute),/remove_all)
   FILE_MKDIR,plot_directory
-  fits_read,mainflat,image,header
+  fits_read,horflats[0],image,header
   fitsize=size(image)
   totalpixels=(fitsize[1]*fitsize[2])
   pixelvalues=fltarr(totalpixels,sz)
-  mFlat=image
   for i=0,sz-1 do begin
     pixel=0L
-    fits_read,flats[i],image,header
+    fits_read,horflats[i],image,header
+    mFlat=image
+    fits_read,overflats[i],image,header
     for j=0,(fitsize[1]-1) do begin
       for k=0,(fitsize[2]-1) do begin
         pixelvalues[pixel,i]=(image[j,k]/mFlat[j,k])
