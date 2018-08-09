@@ -6,6 +6,7 @@ pro master
   sz=size(files, /N_ELEMENTS)
   print,'Number of files selected =',sz
   fits_read,files[0],image,header
+  date=sxpar(header,'DATE-OBS')
   fitsize=size(image)
   flats=fltarr(3,sz)
   darks=fltarr(2,sz)
@@ -219,6 +220,7 @@ endfor
     sxaddpar,h,'EXPTIME',exptimes[i]
     sxaddpar,h,'PICTYPE',3
     sxaddpar,h,'IMGTYPE','Dark Frame'
+    sxaddpar,h,'DATE-OBS',date
     fits_write,directory+'/master_dark_'+strtrim(string(exptimes[i]),1)+'s.fit',mDark,h
     print,'Created File: '+directory+'/master_dark_'+strtrim(string(exptimes[i]),1)+'s.fit'
   endfor
@@ -257,6 +259,7 @@ endfor
     sxaddpar,g,'FILTER',filterColor
     sxaddpar,g,'PICTYPE',4
     sxaddpar,g,'IMGTYPE','Flat Field'
+    sxaddpar,g,'DATE-OBS',date
     fits_write,directory+'/master_flat_'+filterColor+'.fit',mFlat,g
     print,'Created File:'+directory+' master_flat_'+filterColor+'.fit'
     if (fullCount EQ nFlats-1) then break
