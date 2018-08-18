@@ -6,115 +6,101 @@ pro flats
   print,'Number of files selected =',sz+1
   caldat,systime(/julian),month,day,year,hour,minute
   plot_directory='flats_'+strcompress(string(month,day,year,hour,minute),/remove_all)
-  npixels=25
   fits_read,flats[0],image,header
   fitsize=size(image)
   totalpixels=(fitsize[1]*fitsize[2])
   pixelvalues=fltarr(totalpixels,sz)
-  refpixelvalues=fltarr(totalpixels)
-  pix_val=fltarr(npixels,sz+1)
-  mFlat=image
+  refFlat=image
   date=sxpar(header,'date-obs')
   date=strmid(date,0,10)
   dates=strarr(sz)
-  xpixel=fix(randomu(seed,npixels)*(fitsize[1]-1))
-  ypixel=fix(randomu(seed,npixels)*(fitsize[2]-1))
-  flatnum=indgen(sz+1,start=1)
-
+  flatnum=indgen(sz+1)
+  binarr=[0.955,0.965,0.975,0.985,0.995,1.005,1.015,1.025,1.035,1.045]
+  means=fltarr(10,sz)
+  sigmas=fltarr(10,sz)
   print,'Reference flat from ',date
-  pixel=0L
-  for i=0,npixels-1 do begin
-    pix_val[i,0]=mFlat[xpixel[i],ypixel[i]]
-  endfor
-  for j=0,(fitsize[1]-1) do begin
-    for k=0,(fitsize[2]-1) do begin
-      refpixelvalues[pixel]=mFlat[j,k]
-      pixel=(pixel+1)
-    endfor
-  endfor
 
   for i=0,sz-1 do begin
-    pixel=0L
     fits_read,flats[i+1],image,header
     datetemp=sxpar(header,'date-obs')
     dates[i]=strmid(datetemp,0,10)
+    pixelvalues[*,i]=(image/refFlat)
     print,'Processed flat from ',dates[i]
-    for j=0,(fitsize[1]-1) do begin
-      for k=0,(fitsize[2]-1) do begin
-        pixelvalues[pixel,i]=(image[j,k]/mFlat[j,k])
-        pixel=(pixel+1)
-      endfor
-    endfor
-    for w=0,npixels-1 do begin
-      pix_val[w,i+1]=image[xpixel[w],ypixel[w]]
-    endfor
+  endfor
+
+  w1=where((refFlat GE 0.95) AND (refFlat LT 0.96))
+  w2=where((refFlat GE 0.96) AND (refFlat LT 0.97))
+  w3=where((refFlat GE 0.97) AND (refFlat LT 0.98))
+  w4=where((refFlat GE 0.98) AND (refFlat LT 0.99))
+  w5=where((refFlat GE 0.99) AND (refFlat LT 1.00))
+  w6=where((refFlat GE 1.00) AND (refFlat LT 1.01))
+  w7=where((refFlat GE 1.01) AND (refFlat LT 1.02))
+  w8=where((refFlat GE 1.02) AND (refFlat LT 1.03))
+  w9=where((refFlat GE 1.03) AND (refFlat LT 1.04))
+  w10=where((refFlat GE 1.04) AND (refFlat LT 1.05))
+
+  for i=0,sz-1 do begin
+    newimage1=pixelvalues[w1,i]
+    newimage2=pixelvalues[w2,i]
+    newimage3=pixelvalues[w3,i]
+    newimage4=pixelvalues[w4,i]
+    newimage5=pixelvalues[w5,i]
+    newimage6=pixelvalues[w6,i]
+    newimage7=pixelvalues[w7,i]
+    newimage8=pixelvalues[w8,i]
+    newimage9=pixelvalues[w9,i]
+    newimage10=pixelvalues[w10,i]
+    means[0,i]=mean(newimage1)
+    means[1,i]=mean(newimage2)
+    means[2,i]=mean(newimage3)
+    means[3,i]=mean(newimage4)
+    means[4,i]=mean(newimage5)
+    means[5,i]=mean(newimage6)
+    means[6,i]=mean(newimage7)
+    means[7,i]=mean(newimage8)
+    means[8,i]=mean(newimage9)
+    means[9,i]=mean(newimage10)
+    sigmas[0,i]=stddev(newimage1)
+    sigmas[1,i]=stddev(newimage2)
+    sigmas[2,i]=stddev(newimage3)
+    sigmas[3,i]=stddev(newimage4)
+    sigmas[4,i]=stddev(newimage5)
+    sigmas[5,i]=stddev(newimage6)
+    sigmas[6,i]=stddev(newimage7)
+    sigmas[7,i]=stddev(newimage8)
+    sigmas[8,i]=stddev(newimage9)
+    sigmas[9,i]=stddev(newimage10)
   endfor
 
   FILE_MKDIR,plot_directory
-
-  set_plot,'ps'
-    device,filename=plot_directory+'/pixelvalueVdate.eps',/encaps,xsize=20,ysize=20
-    !p.thick=4
-    !x.thick=4
-    !y.thick=4
-    !p.charthick=4
-    !p.charsize=1.6
-    plot,[0,0],[0,0],xtitle='Flat Number',ytitle='Pixel Value',xrange=[1,sz+1],yrange=[0.9,1.1],/ystyle,/xstyle
-    for i=0,npixels-1 do begin
-      oplot,flatnum,pix_val[i,*]
-    endfor
-    device,/close
-  print,'Created File: '+plot_directory+'/pixelvalueVdate.eps'
-
   symbol=dindgen(20)*2*!pi/19
   usersym,sin(symbol),cos(symbol),/fill
-  plotvalues=fltarr((totalpixels/8000),sz+1)
-  k=0L
-  for j=0,totalpixels-1 do begin
-    if k EQ floor(totalpixels/8000) then break
-    if ((j MOD 8000) EQ 0) then begin
-      plotvalues[k,0]=refpixelvalues[j]
-      k=k+1
-    endif
-  endfor
-  for i=1,sz do begin
-    k=0L
-    for j=0,totalpixels-1 do begin
-      if k EQ floor(totalpixels/8000) then break
-      if ((j MOD 8000) EQ 0) then begin
-        plotvalues[k,i]=pixelvalues[j,i-1]
-        k=k+1
-      endif
-    endfor
-  endfor
-
 
   for i=0,sz-1 do begin
-    set_plot,'ps'
-      device,filename=plot_directory+'/plot_'+dates[i]+'.eps',/encaps,xsize=20,ysize=20
+    a=median(pixelvalues[*,i])
+    set_plot,'svg'
+      device,filename=plot_directory+'/hist_'+dates[i]+'.svg',xsize=20,ysize=20
       !p.thick=4
       !x.thick=4
       !y.thick=4
       !p.charthick=4
       !p.charsize=1.6
-      plot,plotvalues[*,0],plotvalues[*,i+1],psym=8,ytitle='2nd Pixel Value',xtitle='Reference Pixel Value',xrange=[0.9,1.1],/xstyle,yrange=[0.9,1.1],/ystyle
+      hist_plot,pixelvalues[*,i],bin=0.001,xtitle='Pixel Value',ytitle='Number In Each Bin!C!C',/full,xrange=[0.9,1.1],/xstyle
+      xyouts,175,500,a,/device
       device,/close
-    print,'Created File: '+plot_directory+'/plot_'+dates[i]+'.eps'
-  endfor
+    print,'Created File: '+plot_directory+'/hist_'+dates[i]+'.svg'
 
-  for i=0,sz-1 do begin
-    print,'Average', mean(pixelvalues[*,i])
-    set_plot,'ps'
-      device,filename=plot_directory+'/hist_'+dates[i]+'.eps',/encaps,xsize=20,ysize=20
+    set_plot,'svg'
+      device,filename=plot_directory+'/plot_'+dates[i]+'.svg',xsize=20,ysize=20
       !p.thick=4
       !x.thick=4
       !y.thick=4
       !p.charthick=4
       !p.charsize=1.6
-      hist_plot,pixelvalues[*,i],bin=0.001,xtitle='Pixel Value',ytitle='Number In Each Bin',/full,xrange=[0.9,1.1],/xstyle,/fill
-      xyouts,3000,17000,mean(pixelvalues[*,i]),/device
+      plot,binarr,means[*,i],psym=8,XTickV=binarr,XTicks=11,XRange=[0.945,1.055],/XStyle,yrange=[0.95,1.05],/ystyle
+      oploterr,binarr,means[*,i],sigmas[*,i]
       device,/close
-    print,'Created File: '+plot_directory+'/hist_'+dates[i]+'.eps'
+    print,'Created File: '+plot_directory+'/plot_'+dates[i]+'.svg'
   endfor
   t2=systime(/seconds)
   print,'Total Time= ',t2-t,' Seconds'
