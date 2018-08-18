@@ -9,8 +9,9 @@ pro flats
   fits_read,flats[0],image,header
   fitsize=size(image)
   totalpixels=(fitsize[1]*fitsize[2])
-  pixelvalues=fltarr(totalpixels,sz)
-  refFlat=image
+  pixelvalues=dblarr(totalpixels,sz)
+  images=dblarr(totalpixels,sz)
+  rFlat=image
   date=sxpar(header,'date-obs')
   date=strmid(date,0,10)
   dates=strarr(sz)
@@ -24,8 +25,18 @@ pro flats
     fits_read,flats[i+1],image,header
     datetemp=sxpar(header,'date-obs')
     dates[i]=strmid(datetemp,0,10)
-    pixelvalues[*,i]=(image/refFlat)
+    pixelvalues[*,i]=(image/rFlat)
+    images[*,i]=image
     print,'Processed flat from ',dates[i]
+  endfor
+
+  refFlat=dblarr(totalpixels)
+  pixel=0L
+  for j=0,(fitsize[2]-1) do begin
+    for k=0,(fitsize[1]-1) do begin
+      refFlat[pixel]=rFlat[k,j]
+      pixel=(pixel+1)
+    endfor
   endfor
 
   w1=where((refFlat GE 0.95) AND (refFlat LT 0.96))
@@ -40,16 +51,17 @@ pro flats
   w10=where((refFlat GE 1.04) AND (refFlat LT 1.05))
 
   for i=0,sz-1 do begin
-    newimage1=pixelvalues[w1,i]
-    newimage2=pixelvalues[w2,i]
-    newimage3=pixelvalues[w3,i]
-    newimage4=pixelvalues[w4,i]
-    newimage5=pixelvalues[w5,i]
-    newimage6=pixelvalues[w6,i]
-    newimage7=pixelvalues[w7,i]
-    newimage8=pixelvalues[w8,i]
-    newimage9=pixelvalues[w9,i]
-    newimage10=pixelvalues[w10,i]
+    q=images[*,i]
+    newimage1=q[w1]
+    newimage2=q[w2]
+    newimage3=q[w3]
+    newimage4=q[w4]
+    newimage5=q[w5]
+    newimage6=q[w6]
+    newimage7=q[w7]
+    newimage8=q[w8]
+    newimage9=q[w9]
+    newimage10=q[w10]
     means[0,i]=mean(newimage1)
     means[1,i]=mean(newimage2)
     means[2,i]=mean(newimage3)
@@ -71,13 +83,12 @@ pro flats
     sigmas[8,i]=stddev(newimage9)
     sigmas[9,i]=stddev(newimage10)
   endfor
-
   FILE_MKDIR,plot_directory
   symbol=dindgen(20)*2*!pi/19
   usersym,sin(symbol),cos(symbol),/fill
 
   for i=0,sz-1 do begin
-    a=median(pixelvalues[*,i])
+    a=stddev(pixelvalues[*,i])
     set_plot,'svg'
       device,filename=plot_directory+'/hist_'+dates[i]+'.svg',xsize=20,ysize=20
       !p.thick=4
