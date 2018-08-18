@@ -89,30 +89,31 @@ pro flats
 
   for i=0,sz-1 do begin
     a=stddev(pixelvalues[*,i])
-    set_plot,'svg'
-      device,filename=plot_directory+'/hist_'+dates[i]+'.svg',xsize=20,ysize=20
+    set_plot,'ps'
+      device,filename=plot_directory+'/hist_'+dates[i]+'.eps',/encaps,xsize=20,ysize=20
       !p.thick=4
       !x.thick=4
       !y.thick=4
       !p.charthick=4
       !p.charsize=1.6
-      hist_plot,pixelvalues[*,i],bin=0.001,xtitle='Pixel Value',ytitle='Number In Each Bin!C!C',/full,xrange=[0.9,1.1],/xstyle
-      xyouts,175,500,a,/device
+      hist_plot,pixelvalues[*,i],bin=0.001,xtitle='Pixel Value',ytitle='Number In Each Bin',/full,xrange=[0.9,1.1],/xstyle
+      xyouts,3000,17000,a,/device
       device,/close
-    print,'Created File: '+plot_directory+'/hist_'+dates[i]+'.svg'
+    print,'Created File: '+plot_directory+'/hist_'+dates[i]+'.eps'
 
-    set_plot,'svg'
-      device,filename=plot_directory+'/plot_'+dates[i]+'.svg',xsize=20,ysize=20
+    set_plot,'ps'
+      device,filename=plot_directory+'/plot_'+dates[i]+'.eps',/encaps,xsize=20,ysize=20
       !p.thick=4
       !x.thick=4
       !y.thick=4
       !p.charthick=4
       !p.charsize=1.6
-      plot,binarr,means[*,i],psym=8,XTickV=binarr,XTicks=11,XRange=[0.945,1.055],/XStyle,yrange=[0.95,1.05],/ystyle
+      plot,binarr,means[*,i],psym=8,XRange=[0.945,1.055],/XStyle,yrange=[0.95,1.05],/ystyle
       oploterr,binarr,means[*,i],sigmas[*,i]
       device,/close
-    print,'Created File: '+plot_directory+'/plot_'+dates[i]+'.svg'
+    print,'Created File: '+plot_directory+'/plot_'+dates[i]+'.eps'
   endfor
+
   t2=systime(/seconds)
   print,'Total Time= ',t2-t,' Seconds'
 end
