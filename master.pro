@@ -59,42 +59,46 @@ pro master
   endif
   if nflats EQ 0 then begin
     print,''
-    print,'*****ERROR**** No flat field frames provided'
+    print,'*****NOTICE**** No flat field frames provided'
     print,''
-    stop
   endif
 
   ; Trims the flats and darks arrays to get rid of null entries.
-  flatstrim=fltarr(3,nflats)
+  if nflats NE 0 then begin
+    flatstrim=fltarr(3,nflats)
+    for i=0,nflats-1 do begin
+      flatstrim[0,i]=flats[0,i]
+      flatstrim[1,i]=flats[1,i]
+      flatstrim[2,i]=flats[2,i]
+    endfor
+    delvar,flats
+    flats=flatstrim
+    delvar,flatstrim
+    print,'Number of Flat Frames imported =',nflats
+  endif
+
   darkstrim=fltarr(2,ndarks)
-  for i=0,nflats-1 do begin
-    flatstrim[0,i]=flats[0,i]
-    flatstrim[1,i]=flats[1,i]
-    flatstrim[2,i]=flats[2,i]
-  endfor
   for i=0,ndarks-1 do begin
     darkstrim[0,i]=darks[0,i]
     darkstrim[1,i]=darks[1,i]
   endfor
-  delvar,darks,flats
+  delvar,darks
   darks=darkstrim
-  flats=flatstrim
-  delvar,darkstrim,flatstrim
+  delvar,darkstrim
 
   print,'Number of Dark Frames imported =',ndarks
-  print,'Number of Flat Frames imported =',nflats
 
   ;****************************************
   ;Sorting of files
   ;****************************************
   darkSortIndex=bsort(darks[1,*])
   for i=0,1 do darks[i,*]=darks[i,darkSortIndex]
-
-  flatSortIndex=bsort(flats[2,*])
-  for i=0,2 do flats[i,*]=flats[i,flatSortIndex]
-  flatSortIndex=bsort(flats[1,*])
-  for i=0,2 do flats[i,*]=flats[i,flatSortIndex]
-
+  if nflats NE 0 then begin
+    flatSortIndex=bsort(flats[2,*])
+    for i=0,2 do flats[i,*]=flats[i,flatSortIndex]
+    flatSortIndex=bsort(flats[1,*])
+    for i=0,2 do flats[i,*]=flats[i,flatSortIndex]
+  endif
   ;****************************************
   ;Pre-Analysis of Flats
   ;****************************************
@@ -102,17 +106,20 @@ pro master
   nExps=1
   exptimes=fltarr(nflats+ndarks)
   darkexptimes=fltarr(ndarks)
-  pExptime=flats[2,0]
-  exptimes[0]=pExptime
-  for i=1,nflats-1 do begin
-    exptime=flats[2,i]
-    if exptime NE pExptime then begin
-       nExps=nExps+1
-       exptimes[nExps-1]=exptime
-     endif
-    pExptime=exptime
-  endfor
-  flatexptimes=exptimes
+  if nflats EQ 0 then exptimes[0]=darks[1,0] else begin
+   pExptime=flats[2,0]
+   exptimes[0]=pExptime
+    for i=1,nflats-1 do begin
+      exptime=flats[2,i]
+      if exptime NE pExptime then begin
+        nExps=nExps+1
+        exptimes[nExps-1]=exptime
+      endif
+      pExptime=exptime
+    endfor
+    flatexptimes=exptimes
+  endelse
+
   pExptime=darks[1,0]
   darkexptimes[0]=pExptime
   temp=1
@@ -127,71 +134,78 @@ pro master
     pExptime=exptime
   endfor
 
-  nExps=size(uniq(exptimes,sort(exptimes)),/n_elements)
-  exptimesTrim=fltarr(nExps)
-  exptimesTrim=exptimes[uniq(exptimes,sort(exptimes))]
-  delvar,exptimes
-  nflatExps=size(uniq(flatexptimes,sort(flatexptimes)),/n_elements)
-  flatexptimesTrim=fltarr(nflatExps)
-  flatexptimesTrim=flatexptimes[uniq(flatexptimes,sort(flatexptimes))]
-  delvar,flatexptimes
-  ndarkExps=size(uniq(darkexptimes,sort(darkexptimes)),/n_elements)
-  darkexptimesTrim=fltarr(ndarkExps)
-  darkexptimesTrim=darkexptimes[uniq(darkexptimes,sort(darkexptimes))]
-  delvar,darkexptimes
+    nExps=size(uniq(exptimes,sort(exptimes)),/n_elements)
+    exptimesTrim=fltarr(nExps)
+    exptimesTrim=exptimes[uniq(exptimes,sort(exptimes))]
+    delvar,exptimes
+    if nflats NE 0 then begin
+      nflatExps=size(uniq(flatexptimes,sort(flatexptimes)),/n_elements)
+      flatexptimesTrim=fltarr(nflatExps)
+      flatexptimesTrim=flatexptimes[uniq(flatexptimes,sort(flatexptimes))]
+      delvar,flatexptimes
+      flatexptimes=fltarr(nflatExps-1)
+      for i=1,nflatExps-1 do begin
+        flatexptimes[i-1]=flatexptimesTrim[i]
+      endfor
+      delvar,flatexptimesTrim
+    endif
 
-  exptimes=fltarr(nExps-1)
-  for i=1,nExps-1 do begin
-    exptimes[i-1]=exptimesTrim[i]
-  endfor
-  delvar,exptimesTrim
-  flatexptimes=fltarr(nflatExps-1)
-  for i=1,nflatExps-1 do begin
-    flatexptimes[i-1]=flatexptimesTrim[i]
-  endfor
-  delvar,flatexptimesTrim
-  darkexptimes=fltarr(ndarkExps-1)
-  for i=1,ndarkExps-1 do begin
-    darkexptimes[i-1]=darkexptimesTrim[i]
-  endfor
-  delvar,darkexptimesTrim
+    ndarkExps=size(uniq(darkexptimes,sort(darkexptimes)),/n_elements)
+    darkexptimesTrim=fltarr(ndarkExps)
+    darkexptimesTrim=darkexptimes[uniq(darkexptimes,sort(darkexptimes))]
+    delvar,darkexptimes
 
-for i=0,nflatExps-2 do begin
-  flatexptime=flatexptimes[i]
-  flag=0
-  for j=0,ndarkExps-2 do begin
-    darkexptime=darkexptimes[j]
-    if darkexptime EQ flatexptime then flag=1
-  endfor
-  if flag EQ 0 then begin
-    print,''
-    print,'*****ERROR**** There are no '+strtrim(string(flatexpTime),1)+'s dark frames'
-    print,''
-    stop
+    exptimes=fltarr(nExps-1)
+    for i=1,nExps-1 do begin
+      exptimes[i-1]=exptimesTrim[i]
+    endfor
+    delvar,exptimesTrim
+
+    darkexptimes=fltarr(ndarkExps-1)
+    for i=1,ndarkExps-1 do begin
+      darkexptimes[i-1]=darkexptimesTrim[i]
+    endfor
+    delvar,darkexptimesTrim
+
+  if nflats NE 0 then begin
+    for i=0,nflatExps-2 do begin
+      flatexptime=flatexptimes[i]
+      flag=0
+      for j=0,ndarkExps-2 do begin
+        darkexptime=darkexptimes[j]
+        if darkexptime EQ flatexptime then flag=1
+      endfor
+      if flag EQ 0 then begin
+        print,''
+        print,'*****ERROR**** There are no '+strtrim(string(flatexpTime),1)+'s dark frames'
+        print,''
+        stop
+      endif
+    endfor
   endif
-endfor
 
   nExps=nExps-1
   print,'Number of different Exposure Times =',nExps
   ;Determines which different filters are present
-  nFilts=1
-  filters=fltarr(nflats)
-  pFilter=flats[1,0]
-  filters[0]=pFilter
-  for i=1,nflats-1 do begin
-    filter=flats[1,i]
-    if filter NE pFilter then begin
-       nFilts=nFilts+1
-       filters[nFilts-1]=filter
-     endif
-    pFilter=filter
-  endfor
-  filtersTrim=fltarr(nFilts)
-  for i=0,nFilts-1 do filtersTrim[i]=filters[i]
-  filters=filtersTrim
-  delvar,filtersTrim
-  print,'Number of different Filters Used =',nFilts
-
+  if nflats NE 0 then begin
+    nFilts=1
+    filters=fltarr(nflats)
+    pFilter=flats[1,0]
+    filters[0]=pFilter
+    for i=1,nflats-1 do begin
+      filter=flats[1,i]
+      if filter NE pFilter then begin
+         nFilts=nFilts+1
+         filters[nFilts-1]=filter
+       endif
+      pFilter=filter
+    endfor
+    filtersTrim=fltarr(nFilts)
+    for i=0,nFilts-1 do filtersTrim[i]=filters[i]
+    filters=filtersTrim
+    delvar,filtersTrim
+    print,'Number of different Filters Used =',nFilts
+  endif
   FILE_MKDIR,directory
 
   ;****************************************
@@ -228,43 +242,43 @@ endfor
   ;****************************************
   ;Creation of Master Flats
   ;****************************************
-
-  fullCount = 0
-  for i=0,nFilts-1 do begin
-    filter=flats[1,fullCount]
-    tempCount=0
-    repeat begin
-      fits_read,files[flats[0,fullCount]],image,header
-      flat=image*1.0D
-      expTime=flats[2,fullCount]
-      for j=0,nExps-1 do begin
-        if exptimes[j] EQ expTime then flag=1
+  if nflats NE 0 then begin
+    fullCount = 0
+    for i=0,nFilts-1 do begin
+      filter=flats[1,fullCount]
+      tempCount=0
+      repeat begin
+        fits_read,files[flats[0,fullCount]],image,header
+        flat=image*1.0D
+        expTime=flats[2,fullCount]
+        for j=0,nExps-1 do begin
+          if exptimes[j] EQ expTime then flag=1
+        endfor
+        fits_read,directory+'/master_dark_'+strtrim(string(expTime),1)+'s.fit',image,header
+        dark=image*1.0D
+        if tempCount EQ 0 then begin
+          mFlat=((flat-dark)/(median(flat-dark)))
+        endif else begin
+          mFlat=((mFlat+((flat-dark)/(median(flat-dark)))))
+        endelse
+        tempCount=tempCount+1
+        fullCount=fullCount+1
+        if fullCount EQ nFlats then break
+      endrep until (flats[1,fullCount]) NE filter
+      if flag EQ 0 then break
+      for j=0,nfilters-1 do begin
+        if filter EQ filter_types.filternumber[j] then filterColor=(filter_types.filtername[j] )
       endfor
-      fits_read,directory+'/master_dark_'+strtrim(string(expTime),1)+'s.fit',image,header
-      dark=image*1.0D
-      if tempCount EQ 0 then begin
-        mFlat=((flat-dark)/(median(flat-dark)))
-      endif else begin
-        mFlat=((mFlat+((flat-dark)/(median(flat-dark)))))
-      endelse
-      tempCount=tempCount+1
-      fullCount=fullCount+1
-      if fullCount EQ nFlats then break
-    endrep until (flats[1,fullCount]) NE filter
-    if flag EQ 0 then break
-    for j=0,nfilters-1 do begin
-      if filter EQ filter_types.filternumber[j] then filterColor=(filter_types.filtername[j] )
+      mFlat=mFlat/tempCount
+      sxaddpar,g,'FILTER',filterColor
+      sxaddpar,g,'PICTYPE',4
+      sxaddpar,g,'IMGTYPE','Flat Field'
+      sxaddpar,g,'DATE-OBS',date
+      fits_write,directory+'/master_flat_'+filterColor+'.fit',mFlat,g
+      print,'Created File:'+directory+' master_flat_'+filterColor+'.fit'
+      if (fullCount EQ nFlats-1) then break
     endfor
-    mFlat=mFlat/tempCount
-    sxaddpar,g,'FILTER',filterColor
-    sxaddpar,g,'PICTYPE',4
-    sxaddpar,g,'IMGTYPE','Flat Field'
-    sxaddpar,g,'DATE-OBS',date
-    fits_write,directory+'/master_flat_'+filterColor+'.fit',mFlat,g
-    print,'Created File:'+directory+' master_flat_'+filterColor+'.fit'
-    if (fullCount EQ nFlats-1) then break
-  endfor
-
+  endif
   t2=systime(/seconds)
   print,'Total Time= ',t2-t,' Seconds'
 end
