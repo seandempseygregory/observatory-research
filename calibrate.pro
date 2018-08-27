@@ -1,3 +1,17 @@
+; INFO
+;
+;NAME:
+;       CALIBRATE
+;
+; PURPOSE:
+;             Calibrates fit files using master dark and master flat field frames
+;
+; INFO:
+;      AUTHOR - Sean Dempsey-Gregory
+;              State University of New York at Fredonia Physics Department
+;
+;      LAST DATE MODIFIED -  08/27/2018
+
 pro calibrate
 
   ;Displays dialog windows for user to select .fit files
@@ -14,14 +28,17 @@ pro calibrate
   sz=size(files, /N_ELEMENTS)
   nflats=size(flats, /N_ELEMENTS)
   print,'Number of files selected =',sz
+
+  ;Reads in one of the files to determine the size of the frames
   fits_read,files[0],image,header
   fitsize=size(image)
   filters=fltarr(nflats)
   fits_read,dark,mdark,header
 
   ;****************************************
-  ;Determine filter type for master flats
+  ;Determine filter type of master flats
   ;****************************************
+
   for i=0,nflats-1 do begin
     fits_read,flats[i],image,header
     x=strcompress(sxpar(header,'filter'),/remove_all)
@@ -31,6 +48,10 @@ pro calibrate
   ;****************************************
   ;Calibration
   ;****************************************
+;Performs calibration on individual frames, first a dark subtraction is done,
+;and then the resulting image is divided by the master flat of the correct filter type
+;Next the background level of the image is determined and then subtracted from the entire image, this sets the background level to 0
+;Finally an offset of 1000 is added to every pixel value to get rid of negative values
   for i=0,sz-1 do begin
     fits_read,files[i],image,header
     x=strcompress(sxpar(header,'filter'),/remove_all)
@@ -40,7 +61,6 @@ pro calibrate
     image=image-s+1000
     image=float(image)
     fits_write,directory+'/calibrated_'+x+'_'+strtrim(string(i+1),1)+'.fit',image,header
-    ;modfits,'calibrated_files/calibrated_'+strtrim(string(i+1),1)+'_'+x+'.fit',0,header
     print,'Created File:'+directory+'/calibrated_'+x+'_'+strtrim(string(i+1),1)+'.fit'
   endfor
 

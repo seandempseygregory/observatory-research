@@ -1,15 +1,33 @@
+; INFO
+;
+;NAME:
+;       MASTER
+;
+; PURPOSE:
+;             Creates master dark and flat field frames
+;
+; INFO:
+;      AUTHOR - Sean Dempsey-Gregory
+;              State University of New York at Fredonia Physics Department
+;
+;      LAST DATE MODIFIED -  08/27/2018
+
 pro master
 
-  ;Displays dialog window for user to select .fit files
+  ;Displays dialog window for user to select all dark and flat field frames
   files = DIALOG_PICKFILE(TITLE="Select .fit Files",  FILTER='*.fit',/MULTIPLE_FILES)
   t=systime(/seconds)
   sz=size(files, /N_ELEMENTS)
   print,'Number of files selected =',sz
+
+;Reads in one of the frames to determine the the size of the frame as well as the date the frames were taken.
+;Also initializes arrays
   fits_read,files[0],image,header
   date=sxpar(header,'DATE-OBS')
   fitsize=size(image)
   flats=fltarr(3,sz)
   darks=fltarr(2,sz)
+  ;NOTE: filter_types is a structure of the different filter types, the filtername tag must be updated if the filters in the filter wheel are changed
   filter_types={filtername:['Red','Green','Blue','U','B','V','R','I'],filternumber:[1,2,3,4,5,6,7,8]}
   nfilters=size(filter_types.filternumber, /N_ELEMENTS)
   caldat,systime(/julian),month,day,year,hour,minute
@@ -18,6 +36,7 @@ pro master
   ;****************************************
   ;Reading in and initial sorting of files
   ;****************************************
+  ;Reads in and sorts all files stores all relevant data into arrays. Also performs some error checking
   ndarks=0
   nflats=0
   for i=0,sz-1 do begin
@@ -99,6 +118,7 @@ pro master
     flatSortIndex=bsort(flats[1,*])
     for i=0,2 do flats[i,*]=flats[i,flatSortIndex]
   endif
+
   ;****************************************
   ;Pre-Analysis of Flats
   ;****************************************
@@ -186,6 +206,7 @@ pro master
 
   nExps=nExps-1
   print,'Number of different Exposure Times =',nExps
+
   ;Determines which different filters are present
   if nflats NE 0 then begin
     nFilts=1
@@ -211,6 +232,7 @@ pro master
   ;****************************************
   ;Creation of Master Darks
   ;****************************************
+  ;Averages all dark frames of the same exposure time and outputs a master dark for each exposure time present
   fullCount = 0
   for i=0,nExps-1 do begin
     tempCount=0
@@ -242,6 +264,9 @@ pro master
   ;****************************************
   ;Creation of Master Flats
   ;****************************************
+  ;Creates a master flat for each of the filter types present,
+  ;This is done by first subtracting the master dark of the correct exposure time from each individual flat field frame
+  ;and then the resulting image is divided by the median of itself
   if nflats NE 0 then begin
     fullCount = 0
     for i=0,nFilts-1 do begin

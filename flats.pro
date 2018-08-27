@@ -1,17 +1,33 @@
+; INFO
+;
+;NAME:
+;       FLATS
+;
+; PURPOSE:
+;             Produces plots that show the consistency of flat field frames across different nights
+;
+; INFO:
+;      AUTHOR - Sean Dempsey-Gregory
+;              State University of New York at Fredonia Physics Department
+;
+;      LAST DATE MODIFIED -  08/27/2018
+
 pro flats
+  ;Displays a dialog box for the user to select the flat field frames, more than one file must be selected,
+  ;the first file read in is used as a reference frame, this is determined alphabetically by filename
   print,'Select flats for analysis'
   flats = DIALOG_PICKFILE(TITLE="Select Flats",  FILTER='*.fit',/MULTIPLE_FILES)
   t=systime(/seconds)
   sz=(size(flats, /N_ELEMENTS))-1
   print,'Number of files selected =',sz+1
-  caldat,systime(/julian),month,day,year,hour,minute
-  plot_directory='flats_'+strcompress(string(month,day,year,hour,minute),/remove_all)
+
+; Read in reference flat and determine the number of pixels in the frames, also initializes arrays
   fits_read,flats[0],image,header
   fitsize=size(image)
   totalpixels=(fitsize[1]*fitsize[2])
   pixelvalues=dblarr(totalpixels,sz)
   images=dblarr(totalpixels,sz)
-  rFlat=image
+  refFlat=image
   date=sxpar(header,'date-obs')
   date=strmid(date,0,10)
   dates=strarr(sz)
@@ -19,26 +35,20 @@ pro flats
   binarr=[0.955,0.965,0.975,0.985,0.995,1.005,1.015,1.025,1.035,1.045]
   means=fltarr(10,sz)
   sigmas=fltarr(10,sz)
-  print,'Reference flat from ',date
 
+  print,'Reference flat from ',date         ; NOTE: Dates are read from the header of the fit file and are in GMT
+
+;Reads in the rest of the flat field frames, divides the frame by the reference frame and records all relevant data to arrays
   for i=0,sz-1 do begin
     fits_read,flats[i+1],image,header
     datetemp=sxpar(header,'date-obs')
     dates[i]=strmid(datetemp,0,10)
-    pixelvalues[*,i]=(image/rFlat)
+    pixelvalues[*,i]=(image/refFlat)
     images[*,i]=image
     print,'Processed flat from ',dates[i]
   endfor
 
-  refFlat=dblarr(totalpixels)
-  pixel=0L
-  for j=0,(fitsize[2]-1) do begin
-    for k=0,(fitsize[1]-1) do begin
-      refFlat[pixel]=rFlat[k,j]
-      pixel=(pixel+1)
-    endfor
-  endfor
-
+;Seperates the pixel of the reference frame into 10 bins
   w1=where((refFlat GE 0.95) AND (refFlat LT 0.96))
   w2=where((refFlat GE 0.96) AND (refFlat LT 0.97))
   w3=where((refFlat GE 0.97) AND (refFlat LT 0.98))
@@ -50,6 +60,9 @@ pro flats
   w9=where((refFlat GE 1.03) AND (refFlat LT 1.04))
   w10=where((refFlat GE 1.04) AND (refFlat LT 1.05))
 
+;Using the bins created above, creates 10 bins for each non-reference frame,
+;and fills them with the corresponing pixel values according tho the pixels in the original bins
+;Also determines the mean and standard deviation of each of the 10 bins
   for i=0,sz-1 do begin
     q=images[*,i]
     newimage1=q[w1]
@@ -83,10 +96,16 @@ pro flats
     sigmas[8,i]=stddev(newimage9)
     sigmas[9,i]=stddev(newimage10)
   endfor
+
+;Creates a unique file directory based on the current date and time
+  caldat,systime(/julian),month,day,year,hour,minute
+  plot_directory='flats_'+strcompress(string(month,day,year,hour,minute),/remove_all)
   FILE_MKDIR,plot_directory
   symbol=dindgen(20)*2*!pi/19
   usersym,sin(symbol),cos(symbol),/fill
 
+;Plots a histogram of pixel values divided by the reference pixel values, for each of the non-reference frames
+;Prints the standard deviation on the plot
   for i=0,sz-1 do begin
     a=stddev(pixelvalues[*,i])
     set_plot,'ps'
@@ -101,6 +120,7 @@ pro flats
       device,/close
     print,'Created File: '+plot_directory+'/hist_'+dates[i]+'.eps'
 
+;Plots the mean value of each of the 10 bins for all of the non-reference frames, with error bars representing the standard deviation
     set_plot,'ps'
       device,filename=plot_directory+'/plot_'+dates[i]+'.eps',/encaps,xsize=20,ysize=20
       !p.thick=4
